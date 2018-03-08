@@ -1,0 +1,202 @@
+---
+title: "Project 2 Writeup"
+author: "Max Machalek"
+date: "March 6, 2018"
+output: html_document
+---
+
+todo: clarify how lag was determined, window size was decided upon,
+
+```{r}
+cmv<-read.csv("http://www.uwyo.edu/buerkle/compbio/statlabs/data/hcmv.data.txt")$location
+```
+
+
+Looking at histograms of frequencies: (takl about probabilities)
+```{r}
+hist(cmv, breaks=seq(0, 230000, by=2500), xlim = c(1, 250000), ylim = c(1, 15), 
+     main = "palindrome frequency by location, bin size = 2500",
+     xlab = "Location",labels=T)
+text(x=120000, y = 13, labels = paste("p = .00003"))
+text(x=220000, y = 10, labels = paste("p = .002"))
+
+hist(cmv, breaks=seq(0, 230000, by=5000), xlim = c(1, 250000), ylim = c(1, 20), 
+     main = "palindrome frequency by location, bin size = 5000",
+     xlab = "Location",labels=T)
+text(x=120000, y = 18, labels = paste("p = .000046"))
+text(x=222000, y = 12, labels = paste("p = .01520"))
+
+hist(cmv, breaks=seq(0, 230000, by=10000), xlim = c(1, 250000), ylim = c(1, 25), 
+     main = "palindrome frequency by location, bin size = 10000", 
+     xlab = "Location",labels=T)
+
+```
+
+
+Notable Clusters:
+```{r}
+prob13 <- 1 - ppois(12, lambda = (2500*296)/229354) 
+# probability of 13 or greater occurrences with bins of 2500
+show(prob13)
+# 3.401389e-05
+
+prob10 <- 1 - ppois(9, lambda = (2500*296)/229354)
+# probability of 10 or greater occurrences with bins of 2500
+show(prob10)
+# 0.00187622
+
+###
+
+prob18 <- 1 - ppois(18, lambda = (5000*296)/229354)
+show(prob18)
+
+prob12 <- 1 - ppois(12, lambda = (5000*296)/229354)
+show(prob12)
+
+###
+
+prob23 <- 1 - ppois(23, lambda = (10000*296)/229354)
+show(prob23)
+
+prob16 <- 1 - ppois(16, lambda = (10000*296)/229354)
+show(prob23)
+
+```
+
+
+```{r}
+# cmv.counts<-slide.window(hcmv, 230000, blocksize=3000, incr=400)
+# plot(count ~ block.mid, data=cmv.counts, type="l")
+slide.window<-function(seqdata, total.length, blocksize=500, incr=100){
+
+  block.right<-seq(blocksize,total.length, by=incr)
+
+  block.left<-block.right-blocksize+1
+
+  block.mid<-(block.right+block.left)/2
+
+  nblocks<-length(block.right)
+
+  count<-numeric(nblocks)
+
+  rate<-numeric(nblocks)
+
+  
+
+  for(i in 1:nblocks) {
+
+    focal<-seqdata[seqdata>block.left[i] & seqdata < block.right[i]]
+
+    count[i]<-length(focal)
+
+    rate[i]<-count[i] / blocksize
+
+    # alternatively
+
+    # count[i] <- sum(seqdata>block.left[i] & seqdata < block.right[i])
+
+  }
+
+  data.frame(count, rate, block.left, block.mid, block.right)
+
+}
+
+ 
+
+plot(rate ~ block.mid, data=slide.window(cmv, 230000, blocksize=2500, incr=1000), type="l")
+
+lines(rate ~ block.mid, data=slide.window(cmv, 230000, blocksize=5000, incr=1000), col="green")
+
+lines(rate ~ block.mid, data=slide.window(cmv, 230000, blocksize=10000, incr=1000), col="red")
+
+#lines(rate ~ block.mid, data=slide.window(cmv, 230000, blocksize=36000, incr=1000), col="red")
+```
+```{r}
+#binning by 2500 base pairs
+plot(0:25, dpois(0:25, lambda=2500*296/229354), type='h',
+     ylab="Probability density", xlab="Number of palindromes")
+abline(v = qpois(c(0.025, 0.5, 0.975), lambda=2500*296/229354), col=c("red", "blue", "red"), lwd=2)
+
+#binning by 5000 base pairs
+plot(0:25, dpois(0:25, lambda=5000*296/229354), type='h',
+     ylab="Probability density", xlab="Number of palindromes")
+abline(v = qpois(c(0.025, 0.5, 0.975), lambda=5000*296/229354), col=c("red", "blue", "red"), lwd=2)
+
+#binning by 10000 base pairs
+plot(0:25, dpois(0:25, lambda=10000*296/229354), type='h',
+     ylab="Probability density", xlab="Number of palindromes")
+abline(v = qpois(c(0.025, 0.5, 0.975), lambda=10000*296/229354), col=c("red", "blue", "red"), lwd=2)
+```
+
+
+Sliding window can't be bigger than bin size because then it starts grouping multiple bins in their entirety
+and muddying things up. Increment of 500, 1000 include two spikes of intrigue that are not included with 1500+ increments
+and we want to make sure not to exlude potential regions, but this should be noted when ranking.
+```{r}
+hist(cmv, breaks=seq(0, 230000, by=2500), xlim = c(1, 250000), ylim = c(1, 15), 
+     main = "(fig 1) palindrome frequency by location, bin size = 2500",
+     xlab = "Location", border = FALSE, col = "Grey")
+lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=2500, incr=1000), type="l", col = "black")
+abline(h = 8)
+```
+
+
+Sliding window here shows a spike that reaches cutoff for point of interest but only if increment is under 1500.
+could be a candidate but unlikely.
+```{r}
+hist(cmv, breaks=seq(0, 230000, by=5000), xlim = c(1, 250000), ylim = c(1, 20), 
+     main = "palindrome frequency by location, bin size = 5000",
+     xlab = "Location", border = FALSE, col = "Grey")
+lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=5000, incr=1000), type="l", col = "black")
+abline(h = 12)
+```
+
+
+```{r}
+hist(cmv, breaks=seq(0, 230000, by=10000), xlim = c(1, 250000), ylim = c(1, 30), 
+     main = "palindrome frequency by location, bin size = 10000",
+     xlab = "Location", border = FALSE, col = "Grey")
+lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=10000, incr=1000), type="l", col = "black")
+abline(h = 20)
+```
+
+Can't get some of the regions to show up with 99% probability (.01) but with 95% the 135k one pops up, so 3rd place.
+```{r}
+cmv[1:(296-7)][ which(pgamma(diff(cmv, lag=7), shape=7, 
+                             rate=296/229354) < 0.05) ]
+
+cmv[1:(296-4)][ which(pgamma(diff(cmv, lag=4), shape=4, 
+                             rate=296/229354) < 0.01) ]
+
+cmv[1:(296-5)][ which(pgamma(diff(cmv, lag=5), shape=5, 
+                             rate=296/229354) < 0.01) ]
+
+cmv[1:(296-7)][ which(pgamma(diff(cmv, lag=7), shape=7, 
+                             rate=296/229354) < 0.01) ]
+
+cmv[1:(296-9)][ which(pgamma(diff(cmv, lag=9), shape=9, 
+                             rate=296/229354) < 0.01) ]
+```
+
+```{r}
+```
+
+
+1 - ppois(15, lambda = 2500*296/230000) # probability for 16 or more in a bin of 2500
+
+or 
+
+ppois(15, lambda = 2500*296/230000, lower.tail = FALSE)
+
+CONCLUSION (CANDIDATE REGIONS, ranked)
+
+1.Around 90000-95000 (specifically . . . .)
+
+2. 190k-195k
+
+3. 135k
+
+4. 
+
+5. 
+

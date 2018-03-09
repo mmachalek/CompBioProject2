@@ -12,16 +12,19 @@ todo: clarify how lag was determined, window size was decided upon,
 cmv<-read.csv("http://www.uwyo.edu/buerkle/compbio/statlabs/data/hcmv.data.txt")$location
 ```
 
-
+LEADING CANDIDATE REGIONS:
 Looking at histograms of frequencies: (takl about probabilities)
 
-  First, 
+  Began by making multiple histograms to get an idea of where there were clusters of palindromes.
+The bin sizes were chosen not only to highlight areas of suspect clustering, but for readability too. Bin sizes of 1000 base pairs made a histogram that was very cluttered and noisy, making it somewhat hard to read. Bin sizes of 2500 and 5000 both show two notable "spikes" in palindromes. While a bin size of 2500 better highlights how tight these spikes in palindromes are, 5000 is a little easier to read so I will include both. Bin size 10,000 is a generalization of the data and is included to give a more broad picture of the genome. 
+  To quantify how "unusual" these clusters were, I was able to use the ppois() function in R which gave a cumulative probability of the size of that cluster given a bin size. This means that given a certain number of palindromes recorded in a particular bin size, the function would return a probability of there being that many palindromes or more in that bin. For example, (1 - ppois(12, lambda = (2500*296)/229354)) will return the probability that there are 12 or more palindromes in a bin of 2500 base pairs. This probability is returned as a decimal, and can be read as: p = 0.00003, meaning there is a 0.003% probability that there were 13 palindromes or more in 2500 base pairs.
+  Generally p = 0.05 is the threshold of interest for improbable events, and each histogram labels these two spikes as well within that threshold. This means that these two spikes should be strongly considered as unlikely clusters of palindromes and candidates for the region of replication.
 ```{r}
 
 #plot a histogram of palindromes with bin sizes of 2500 base pairs
 hist(cmv, breaks=seq(0, 230000, by=2500), xlim = c(1, 250000), ylim = c(1, 15), 
-     main = "palindrome frequency by location, bin size = 2500",
-     xlab = "Location",labels=T)
+     main = "(fig. 1) palindrome frequency by location, bin size = 2500",
+     xlab = "Location (number of base pairs relative to start)",labels=T)
 
 #paste probability of the cluster of 13 in a bin size of 2500
 #based on ppois()
@@ -35,17 +38,31 @@ text(x=220000, y = 10, labels = paste("p = .002"))
 
 #plot a histogram of palindromes with bin sizes of 5000 base pairs
 hist(cmv, breaks=seq(0, 230000, by=5000), xlim = c(1, 250000), ylim = c(1, 20), 
-     main = "palindrome frequency by location, bin size = 5000",
-     xlab = "Location",labels=T)
+     main = "(fig. 2) palindrome frequency by location, bin size = 5000",
+     xlab = "Location (number of base pairs relative to start)",labels=T)
+
+#paste probability of the cluster of 18 in a bin size of 5000
+#based on ppois()
 text(x=120000, y = 18, labels = paste("p = .000046"))
+
+#paste probability of the cluster of 12 in a bin size of 5000
+#based on ppois()
 text(x=222000, y = 12, labels = paste("p = .01520"))
 
 #################################################################################
 
 #plot a histogram of palindromes with bin sizes of 1000 base pairs
 hist(cmv, breaks=seq(0, 230000, by=10000), xlim = c(1, 250000), ylim = c(1, 25), 
-     main = "palindrome frequency by location, bin size = 10000", 
-     xlab = "Location",labels=T)
+     main = "(fig. 3) palindrome frequency by location, bin size = 10000", 
+     xlab = "Location (number of base pairs relative to start)",labels=T)
+
+#paste probability of the cluster of 23 in a bin size of 10000
+#based on ppois()
+text(x=130000, y = 23, labels = paste("p = 0.003640147"))
+
+#paste probability of the cluster of 20 in a bin size of 10000
+#based on ppois()
+text(x=230000, y = 20, labels = paste("p = 0.02339052"))
 
 
 #code for getting the listed probabilites is in the next chunk.
@@ -90,18 +107,21 @@ prob23 <- 1 - ppois(23, lambda = (10000*296)/229354)
 show(prob23)
 # 0.003640147
 
-prob16 <- 1 - ppois(16, lambda = (10000*296)/229354)
-# probability of 16 or greater occurences of palindromes
+prob20 <- 1 - ppois(20, lambda = (10000*296)/229354)
+# probability of 20 or greater occurences of palindromes
 # with bins of 10000 base pairs
-show(prob23)
-# 0.003640147
+show(prob20)
+# 0.02339052
 
 ```
 
 
 ```{r}
-# cmv.counts<-slide.window(hcmv, 230000, blocksize=3000, incr=400)
-# plot(count ~ block.mid, data=cmv.counts, type="l")
+## usage:
+## cmv.counts<-slide.window(hcmv, 230000, blocksize=3000, incr=400)
+## plot(count ~ block.mid, data=cmv.counts, type="l")
+
+
 slide.window<-function(seqdata, total.length, blocksize=500, incr=100){
 
   block.right<-seq(blocksize,total.length, by=incr)
@@ -146,41 +166,41 @@ lines(rate ~ block.mid, data=slide.window(cmv, 230000, blocksize=10000, incr=100
 
 #lines(rate ~ block.mid, data=slide.window(cmv, 230000, blocksize=36000, incr=1000), col="red")
 ```
+  
+  Figures 4 through 6 show probability density plots of cluster sizes based on bins of 2500, 5000, and 10,000. These show the point probability of a certain amount of palindromes in a given bin, meaning the probability that that many palindromes occur in that size of bin. This differes from cumulative probability in that it is no longer the probability of that many palindromes or more in a bin, but simply that specific amount of palindromes in a bin. Point probability utilizes the dpois() function. Red and blue lines were added for quantiles of probability defined by qpois(). For example, qpois(c(0.025, 0.5, 0.975), lambda=2500*296/229354) will cause lines to be added on the x axis based on quantiles of probability. The quantiles there are set to p = 0.025, 0.5, and 0.975. This means that there is a 97.5% probability that the number of palindromes in the bin is not beyond the 3rd quantile, and the red line gets placed at that point. Consequently, fig. 4 shows that it would not be very unusual to see any number of palindromes less than 7 in a bin size of 2500. Fig 5. shows that 12 or more clusters would indicate a suspect area of improbable clustering given bin sizes of 5000. Fig. 6 shows that for bins of 10,000 then the threshold for an unusual cluster would be at 20 palindromes.
 ```{r}
 #binning by 2500 base pairs
 plot(0:25, dpois(0:25, lambda=2500*296/229354), type='h',
-     ylab="Probability density", xlab="Number of palindromes")
+     ylab="Probability density", xlab="Number of palindromes", 
+     main = "(fig. 4) Probability density plot of palindrome clusters (bin size 2500)")
 abline(v = qpois(c(0.025, 0.5, 0.975), lambda=2500*296/229354), col=c("red", "blue", "red"), lwd=2)
 
 #binning by 5000 base pairs
 plot(0:25, dpois(0:25, lambda=5000*296/229354), type='h',
-     ylab="Probability density", xlab="Number of palindromes")
+     ylab="Probability density", xlab="Number of palindromes",
+    main = "(fig. 5) Probability density plot of palindrome clusters (bin size 5000)")
 abline(v = qpois(c(0.025, 0.5, 0.975), lambda=5000*296/229354), col=c("red", "blue", "red"), lwd=2)
 
 #binning by 10000 base pairs
 plot(0:25, dpois(0:25, lambda=10000*296/229354), type='h',
-     ylab="Probability density", xlab="Number of palindromes")
+     ylab="Probability density", xlab="Number of palindromes",
+    main = "(fig. 6) Probability density plot of palindrome clusters (bin size 10000)")
 abline(v = qpois(c(0.025, 0.5, 0.975), lambda=10000*296/229354), col=c("red", "blue", "red"), lwd=2)
 ```
 
-
-Sliding window can't be bigger than bin size because then it starts grouping multiple bins in their entirety
-and muddying things up. Increment of 500, 1000 include two spikes of intrigue that are not included with 1500+ increments
-and we want to make sure not to exlude potential regions, but this should be noted when ranking.
+  However, what if binning for the histograms had been cutting apart groups of palindromes and hiding potential clusters? To deal with this possibility, I used a sliding window function that would incorporate neighboring data in the blocks in increments of 1000. This allows for a more continual depiction of the palindrome concentration fluctuation. I chose increments of 1000 because if it were too big it would be encroaching on entire other bins and misrepresent the binning, not helping analyze the histograms. Additionally, 1000 is small enough to help highlight previously hidden groups while being big enough to not too closely match the histogram. If the increment value were 20, for example, the sliding window would look almost exactly like our histogram. If it were 5000, it would include entire other bins for the 2500 and 5000 bin sizes and be far too generalized to see hidden groups of palindromes. 
+    Figures 7 through 9 show the sliding window analyses plotted over our previous histograms. A horizontal line is added at the 3rd quantile cutoff that we found and showed in figures 4 through 6. There are now not only the notable two spikes that were observed in the histograms, but each graph now has at least one new area of potential clustering. Figure 7 shows that around 75,000 and 135,000 there are two more notable groups. It also shows that following 50,000 there is a less notable uptick, which might be considered after the others. However, figure 8 with bin size of 5000 does not show any of those clusters but rather one near 160,000 that the bin size of 2500 did not find. This suggests that the clusters in figure 7 might be more tightly packed, and the cluster in figure 8 is a little more spread out.
 ```{r}
 hist(cmv, breaks=seq(0, 230000, by=2500), xlim = c(1, 250000), ylim = c(1, 15), 
-     main = "(fig 1) palindrome frequency by location, bin size = 2500",
+     main = "(fig. 7) palindrome frequency by location, bin size = 2500",
      xlab = "Location", border = FALSE, col = "Grey")
 lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=2500, incr=1000), type="l", col = "black")
-abline(h = 8)
+abline(h = 7)
 ```
 
-
-Sliding window here shows a spike that reaches cutoff for point of interest but only if increment is under 1500.
-could be a candidate but unlikely.
 ```{r}
 hist(cmv, breaks=seq(0, 230000, by=5000), xlim = c(1, 250000), ylim = c(1, 20), 
-     main = "palindrome frequency by location, bin size = 5000",
+     main = "(fig. 8) palindrome frequency by location, bin size = 5000",
      xlab = "Location", border = FALSE, col = "Grey")
 lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=5000, incr=1000), type="l", col = "black")
 abline(h = 12)
@@ -189,7 +209,7 @@ abline(h = 12)
 
 ```{r}
 hist(cmv, breaks=seq(0, 230000, by=10000), xlim = c(1, 250000), ylim = c(1, 30), 
-     main = "palindrome frequency by location, bin size = 10000",
+     main = "(fig. 9) palindrome frequency by location, bin size = 10000",
      xlab = "Location", border = FALSE, col = "Grey")
 lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=10000, incr=1000), type="l", col = "black")
 abline(h = 20)
@@ -199,24 +219,55 @@ Can't get some of the regions to show up with 99% probability (.01) but with 95%
 
 
 SPACING GRAPH
+  So far the count of palindromes has been the focus of discussion, but what about their spacing?
+It is possible to use the diff() function in R with a "lag" and "shape" that define a group size of palindrome clusters. The diff() function will show lagged differences between values, so we can use it to set group sizes. With those groups, pgamma() can be used to calculate the probability of the proximity of the group. The Pgamma function calculates the cumulative probability of the spacing of palindrome groups (whose size is given by the diff() function). 
+  Pgamma() is based on the gamma probability distribution, which can be used for the spacing of data points. Above, the ppois() and dpois() functions utilized the poisson probability distribution because it is used with respect to counts, not spacing. These probability distributions can be used when they are applied to a homogenous Poisson process model. This is a model for discrete events in continous time or space, such as discrete palindromes in the "continous" space of the genome. 
+  Applying our use of pgamma(), figure 10 shows a plot of the probability of distances in palindrome groups based on a group size (lag) of 7. The probability is on a logarithmic scale to make it more readable. The more negative the y value, the less probable the result. Once more, we see notable dips in probability of the clusters around 90,000 and 190,000. The other notable clusters discovered with the sliding window analysis are evident too, though they do not appear as improbable. This shows that these clusters are less likely to have been grouped so tightly due to chance than other clusters in the data. I chose a lag of 7 because lower lags made it slightly harder to observe the difference in magnitude of the spikes. However, a larger lag made it hard to observe the smaller fluctuations such as the ones at 75,000 and 135,000.
 ```{r}
-plot(cmv[1:(296-9)], pgamma(diff(cmv, lag=9), shape=9, rate=296/229354, log=T))
+plot(cmv[1:(296-7)], pgamma(diff(cmv, lag=7), shape=7, rate=296/229354, log=T),
+     xlab = c("Location"), ylab = c("Logarithmic probability"), main = "(fig. 10) Plot of group spacing, group size = 7")
 ```
 
 
 ```{r}
+
+# show the location of various group sizes with improbable proximity within group
+# based on pgamma (cumulative probability) of the diff() (setting group sizes).
+
+cat('lag = 4, p < .05 \n')
+cmv[1:(296-4)][ which(pgamma(diff(cmv, lag=4), shape=4, 
+                             rate=296/229354) < 0.05) ]
+cat('\n')
+
+cat('lag = 4, p < .05 \n')
+cmv[1:(296-5)][ which(pgamma(diff(cmv, lag=5), shape=5, 
+                             rate=296/229354) < 0.05) ]
+cat('\n')
+
+cat('lag = 4, p < .05 \n')
 cmv[1:(296-7)][ which(pgamma(diff(cmv, lag=7), shape=7, 
                              rate=296/229354) < 0.05) ]
+cat('\n')
 
+cat('lag = 4, p < .01 \n')
 cmv[1:(296-4)][ which(pgamma(diff(cmv, lag=4), shape=4, 
                              rate=296/229354) < 0.01) ]
+cat('\n')
 
+
+cat('lag = 5, p < .01 \n') 
 cmv[1:(296-5)][ which(pgamma(diff(cmv, lag=5), shape=5, 
                              rate=296/229354) < 0.01) ]
+cat('\n')
 
+
+cat('lag = 7, p < .01 \n') 
 cmv[1:(296-7)][ which(pgamma(diff(cmv, lag=7), shape=7, 
                              rate=296/229354) < 0.01) ]
+cat('\n')
 
+
+cat('lag = 9, p < .01 \n') 
 cmv[1:(296-9)][ which(pgamma(diff(cmv, lag=9), shape=9, 
                              rate=296/229354) < 0.01) ]
 ```

@@ -228,7 +228,7 @@ plot(cmv[1:(296-7)], pgamma(diff(cmv, lag=7), shape=7, rate=296/229354, log=T),
      xlab = c("Location"), ylab = c("Logarithmic probability"), main = "(fig. 10) Plot of group spacing, group size = 7")
 ```
 
-
+  Below are groups of improbable clusters based on their group size (lag), and probability (p). The clusters at 90,000 and 190,000 appear in all of these lists. The cluster at 75,000 appears with lag of 4 and 5, with p < 0.01 meaning it is also quite improbable. If the cutoff probability is made slightly more lenient, p = 0.05, then more clusters appear around 50,000, 175,000, and 135,000 but these are not as strong of candidates due to their requirement of a smaller group sizing and more lenient probability cutoff.
 ```{r}
 
 # show the location of various group sizes with improbable proximity within group
@@ -239,12 +239,12 @@ cmv[1:(296-4)][ which(pgamma(diff(cmv, lag=4), shape=4,
                              rate=296/229354) < 0.05) ]
 cat('\n')
 
-cat('lag = 4, p < .05 \n')
+cat('lag = 5, p < .05 \n')
 cmv[1:(296-5)][ which(pgamma(diff(cmv, lag=5), shape=5, 
                              rate=296/229354) < 0.05) ]
 cat('\n')
 
-cat('lag = 4, p < .05 \n')
+cat('lag = 7, p < .05 \n')
 cmv[1:(296-7)][ which(pgamma(diff(cmv, lag=7), shape=7, 
                              rate=296/229354) < 0.05) ]
 cat('\n')
@@ -272,25 +272,17 @@ cmv[1:(296-9)][ which(pgamma(diff(cmv, lag=9), shape=9,
                              rate=296/229354) < 0.01) ]
 ```
 
-```{r}
-```
 
-
-1 - ppois(15, lambda = 2500*296/230000) # probability for 16 or more in a bin of 2500
-
-or 
-
-ppois(15, lambda = 2500*296/230000, lower.tail = FALSE)
-
-CONCLUSION (CANDIDATE REGIONS, ranked)
-
-1.Around 90000-95000 (specifically . . . .)
-
-2. 190k-195k
-
-3. 135k
-
-4. 
-
-5. 
-
+  Given this information, I would rank candidate locations as such:
+  
+  1. ~90,000 to ~95,000 (first at 90,251)
+  
+  2. ~193,000 to ~198,000 (first at 193,447)
+  
+  3. ~75,000 to ~77,500 (first at 74,053)
+  
+  4. ~135,000 to ~140,000 (first at )
+  
+  5. ~160,000 to 165,000 (first at 162,682)
+  
+  Where rank 1 is most suspect, and the rest follow in a descending order. The location of the first palindrome is given as a fairly early observation of the beginning of a group to ensure it is not exluded. The less probable and less apparent groups, like the ones only seen in the sliding window or in the pgamma probability groups, are included as notable clusters in the event that the dramatic first two do not yield the site of replication. Ranks 3, 4, and 5 are all clusters that reach the probability cutoff drawn on figures 7 and 8. While not as improbable as the clusters around 90,000 and 190,000, they are still worth noting. It is also worth noting that in saying a cluster is improbable, it is only so improbable given that it is the product of chance.

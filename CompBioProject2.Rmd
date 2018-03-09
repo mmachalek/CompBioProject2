@@ -8,58 +8,93 @@ output: html_document
 todo: clarify how lag was determined, window size was decided upon,
 
 ```{r}
+#read the data in and store it as "cmv"
 cmv<-read.csv("http://www.uwyo.edu/buerkle/compbio/statlabs/data/hcmv.data.txt")$location
 ```
 
 
 Looking at histograms of frequencies: (takl about probabilities)
+
+  First, 
 ```{r}
+
+#plot a histogram of palindromes with bin sizes of 2500 base pairs
 hist(cmv, breaks=seq(0, 230000, by=2500), xlim = c(1, 250000), ylim = c(1, 15), 
      main = "palindrome frequency by location, bin size = 2500",
      xlab = "Location",labels=T)
+
+#paste probability of the cluster of 13 in a bin size of 2500
+#based on ppois()
 text(x=120000, y = 13, labels = paste("p = .00003"))
+
+#paste probability of the cluster of 10 in a bin size of 2500
+#based on ppois()
 text(x=220000, y = 10, labels = paste("p = .002"))
 
+#################################################################################
+
+#plot a histogram of palindromes with bin sizes of 5000 base pairs
 hist(cmv, breaks=seq(0, 230000, by=5000), xlim = c(1, 250000), ylim = c(1, 20), 
      main = "palindrome frequency by location, bin size = 5000",
      xlab = "Location",labels=T)
 text(x=120000, y = 18, labels = paste("p = .000046"))
 text(x=222000, y = 12, labels = paste("p = .01520"))
 
+#################################################################################
+
+#plot a histogram of palindromes with bin sizes of 1000 base pairs
 hist(cmv, breaks=seq(0, 230000, by=10000), xlim = c(1, 250000), ylim = c(1, 25), 
      main = "palindrome frequency by location, bin size = 10000", 
      xlab = "Location",labels=T)
 
+
+#code for getting the listed probabilites is in the next chunk.
 ```
 
 
 Notable Clusters:
 ```{r}
+
 prob13 <- 1 - ppois(12, lambda = (2500*296)/229354) 
-# probability of 13 or greater occurrences with bins of 2500
+# probability of 13 or greater occurrences of palindromes
+# with histogram bins of 2500 base pairs
+
 show(prob13)
 # 3.401389e-05
 
 prob10 <- 1 - ppois(9, lambda = (2500*296)/229354)
-# probability of 10 or greater occurrences with bins of 2500
+# probability of 10 or greater occurrences of palindromes
+# with histogram bins of 2500 base pairs
 show(prob10)
 # 0.00187622
 
-###
+#################################################################################
 
 prob18 <- 1 - ppois(18, lambda = (5000*296)/229354)
+# probability of 18 or greater occurences of palindromes
+# with bins of 5000 base pairs
 show(prob18)
+# 4.599756e-05
 
 prob12 <- 1 - ppois(12, lambda = (5000*296)/229354)
+# probability of 12 or greater occurences of palindromes
+# with bins of 5000 base pairs
 show(prob12)
+# 0.01520251
 
-###
+#################################################################################
 
 prob23 <- 1 - ppois(23, lambda = (10000*296)/229354)
+# probability of 23 or greater occurences of palindromes
+# with bins of 10000 base pairs
 show(prob23)
+# 0.003640147
 
 prob16 <- 1 - ppois(16, lambda = (10000*296)/229354)
+# probability of 16 or greater occurences of palindromes
+# with bins of 10000 base pairs
 show(prob23)
+# 0.003640147
 
 ```
 
@@ -161,6 +196,14 @@ abline(h = 20)
 ```
 
 Can't get some of the regions to show up with 99% probability (.01) but with 95% the 135k one pops up, so 3rd place.
+
+
+SPACING GRAPH
+```{r}
+plot(cmv[1:(296-9)], pgamma(diff(cmv, lag=9), shape=9, rate=296/229354, log=T))
+```
+
+
 ```{r}
 cmv[1:(296-7)][ which(pgamma(diff(cmv, lag=7), shape=7, 
                              rate=296/229354) < 0.05) ]

@@ -1,0 +1,34 @@
+outline:
+
+-Histograms to get idea of group locations,
+	use ppois to get probability of groups that look large.
+	Eyeball different bin sizes to get various depictions of data/groups
+
+-Sliding window to help prevent groups from being cut in pieces by the binning
+	of the histogram
+
+-dpois to get point-probability of grouping for different bin sizes, graph it
+	with x axis=group size and y axis = probability density and include bars
+	where it becomes improbable that the group of that size was due to chance
+
+-overlay sliding window over histograms to compare them, and then add line where
+	group is improbable based off the dpois that we just calculated and graphed.
+	(note that only 2 histogram bars rise up to meet the improbable line,
+	but a few spikes in the sliding window analysis reach up to it that were
+	invisible in the histogram)
+
+-use pgamma to find proximity probability of different sizes of groups of palindromes,
+	ie. the probability that "the following LAG/SHAPE palindromes are as close to a head palindrome is under .01/.05" and how the .01 ones suggest more improbable clustering.
+
+RANK
+
+1. 90k-95k
+
+2. 190k-195k
+
+3. 74k
+
+4. 135k
+
+5.
+

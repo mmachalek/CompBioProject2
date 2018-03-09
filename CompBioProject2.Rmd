@@ -12,12 +12,9 @@ todo: clarify how lag was determined, window size was decided upon,
 cmv<-read.csv("http://www.uwyo.edu/buerkle/compbio/statlabs/data/hcmv.data.txt")$location
 ```
 
-LEADING CANDIDATE REGIONS:
-Looking at histograms of frequencies: (takl about probabilities)
-
-  Began by making multiple histograms to get an idea of where there were clusters of palindromes.
-The bin sizes were chosen not only to highlight areas of suspect clustering, but for readability too. Bin sizes of 1000 base pairs made a histogram that was very cluttered and noisy, making it somewhat hard to read. Bin sizes of 2500 and 5000 both show two notable "spikes" in palindromes. While a bin size of 2500 better highlights how tight these spikes in palindromes are, 5000 is a little easier to read so I will include both. Bin size 10,000 is a generalization of the data and is included to give a more broad picture of the genome. 
-  To quantify how "unusual" these clusters were, I was able to use the ppois() function in R which gave a cumulative probability of the size of that cluster given a bin size. This means that given a certain number of palindromes recorded in a particular bin size, the function would return a probability of there being that many palindromes or more in that bin. For example, (1 - ppois(12, lambda = (2500*296)/229354)) will return the probability that there are 12 or more palindromes in a bin of 2500 base pairs. This probability is returned as a decimal, and can be read as: p = 0.00003, meaning there is a 0.003% probability that there were 13 palindromes or more in 2500 base pairs.
+  I began with the goal of using a homogenous poisson distribution model against which I could gauge the counts and spacing of palindromes. To do this the functinos pgamma(), ppois(), and dpois() can be used. Pgamma() is based on the gamma probability distribution, which can be used for the spacing of data points. The ppois() and dpois() functions utilize the poisson probability distribution because it is used with respect to counts, not spacing. These probability distributions can be used when they are applied to a homogenous Poisson process model. This is a model for discrete events in continous time or space, such as discrete palindromes in the "continous" space of the genome. 
+  The process of identifying suspiciously clustered regions began with the construction multiple histograms to get an idea of where there were clusters of palindromes. The bin sizes were chosen not only to highlight areas of suspect clustering, but for readability too. Bin sizes of 1000 base pairs made a histogram that was very cluttered and noisy, making it somewhat hard to read. Bin sizes of 2500 and 5000 both show two notable "spikes" in palindromes. While a bin size of 2500 better highlights how tight these spikes in palindromes are, 5000 is a little easier to read so I will include both. Bin size 10,000 is a generalization of the data and is included to give a more broad picture of the genome. 
+  To quantify how "unusual" these clusters were, I used the ppois() function in R which gave a cumulative probability of the size of that cluster given a bin size. This means that given a certain number of palindromes recorded in a particular bin size, the function would return a probability of there being that many palindromes or more in that bin. For example, (1 - ppois(12, lambda = (2500*296)/229354)) will return the probability that there are 12 or more palindromes in a bin of 2500 base pairs. This probability is returned as a decimal, and can be read as: p = 0.00003, meaning there is a 0.003% probability that there were 13 palindromes or more in 2500 base pairs.
   Generally p = 0.05 is the threshold of interest for improbable events, and each histogram labels these two spikes as well within that threshold. This means that these two spikes should be strongly considered as unlikely clusters of palindromes and candidates for the region of replication.
 ```{r}
 
@@ -191,44 +188,51 @@ abline(v = qpois(c(0.025, 0.5, 0.975), lambda=10000*296/229354), col=c("red", "b
   However, what if binning for the histograms had been cutting apart groups of palindromes and hiding potential clusters? To deal with this possibility, I used a sliding window function that would incorporate neighboring data in the blocks in increments of 1000. This allows for a more continual depiction of the palindrome concentration fluctuation. I chose increments of 1000 because if it were too big it would be encroaching on entire other bins and misrepresent the binning, not helping analyze the histograms. Additionally, 1000 is small enough to help highlight previously hidden groups while being big enough to not too closely match the histogram. If the increment value were 20, for example, the sliding window would look almost exactly like our histogram. If it were 5000, it would include entire other bins for the 2500 and 5000 bin sizes and be far too generalized to see hidden groups of palindromes. 
     Figures 7 through 9 show the sliding window analyses plotted over our previous histograms. A horizontal line is added at the 3rd quantile cutoff that we found and showed in figures 4 through 6. There are now not only the notable two spikes that were observed in the histograms, but each graph now has at least one new area of potential clustering. Figure 7 shows that around 75,000 and 135,000 there are two more notable groups. It also shows that following 50,000 there is a less notable uptick, which might be considered after the others. However, figure 8 with bin size of 5000 does not show any of those clusters but rather one near 160,000 that the bin size of 2500 did not find. This suggests that the clusters in figure 7 might be more tightly packed, and the cluster in figure 8 is a little more spread out.
 ```{r}
+#plot the histogram with bins of 2500 like before but with no labels and grey bars
 hist(cmv, breaks=seq(0, 230000, by=2500), xlim = c(1, 250000), ylim = c(1, 15), 
      main = "(fig. 7) palindrome frequency by location, bin size = 2500",
      xlab = "Location", border = FALSE, col = "Grey")
+
+#add the sliding window analyses over the histogram
 lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=2500, incr=1000), type="l", col = "black")
+
+#add the probability cutoff given by the probability distribution plots above
 abline(h = 7)
 ```
 
 ```{r}
+#plot the histogram with bins of 5000 like before, but remove labels and change the bars to grey
 hist(cmv, breaks=seq(0, 230000, by=5000), xlim = c(1, 250000), ylim = c(1, 20), 
      main = "(fig. 8) palindrome frequency by location, bin size = 5000",
      xlab = "Location", border = FALSE, col = "Grey")
+#add the sliding window analysis over the histogram
 lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=5000, incr=1000), type="l", col = "black")
+
+#plot probability cutoff given by probability distribution plots above
 abline(h = 12)
 ```
 
 
 ```{r}
+#plotting 10,000 bin size histogram, grey bars, no labels
 hist(cmv, breaks=seq(0, 230000, by=10000), xlim = c(1, 250000), ylim = c(1, 30), 
      main = "(fig. 9) palindrome frequency by location, bin size = 10000",
      xlab = "Location", border = FALSE, col = "Grey")
+#adding sliding window
 lines(count ~ block.mid, data=slide.window(cmv, 230000, blocksize=10000, incr=1000), type="l", col = "black")
+
+#adding probability cutoff from prob distribution graph 
 abline(h = 20)
 ```
 
-Can't get some of the regions to show up with 99% probability (.01) but with 95% the 135k one pops up, so 3rd place.
-
-
-SPACING GRAPH
-  So far the count of palindromes has been the focus of discussion, but what about their spacing?
-It is possible to use the diff() function in R with a "lag" and "shape" that define a group size of palindrome clusters. The diff() function will show lagged differences between values, so we can use it to set group sizes. With those groups, pgamma() can be used to calculate the probability of the proximity of the group. The Pgamma function calculates the cumulative probability of the spacing of palindrome groups (whose size is given by the diff() function). 
-  Pgamma() is based on the gamma probability distribution, which can be used for the spacing of data points. Above, the ppois() and dpois() functions utilized the poisson probability distribution because it is used with respect to counts, not spacing. These probability distributions can be used when they are applied to a homogenous Poisson process model. This is a model for discrete events in continous time or space, such as discrete palindromes in the "continous" space of the genome. 
+  So far the count of palindromes has been the focus of discussion, but what about their spacing? It is possible to use the diff() function in R with a "lag" and "shape" that define a group size of palindrome clusters. The diff() function will show lagged differences between values, so we can use it to set group sizes. With those groups, pgamma() can be used to calculate the probability of the proximity of the group. The Pgamma function calculates the cumulative probability of the spacing of palindrome groups (whose size is given by the diff() function). 
   Applying our use of pgamma(), figure 10 shows a plot of the probability of distances in palindrome groups based on a group size (lag) of 7. The probability is on a logarithmic scale to make it more readable. The more negative the y value, the less probable the result. Once more, we see notable dips in probability of the clusters around 90,000 and 190,000. The other notable clusters discovered with the sliding window analysis are evident too, though they do not appear as improbable. This shows that these clusters are less likely to have been grouped so tightly due to chance than other clusters in the data. I chose a lag of 7 because lower lags made it slightly harder to observe the difference in magnitude of the spikes. However, a larger lag made it hard to observe the smaller fluctuations such as the ones at 75,000 and 135,000.
 ```{r}
 plot(cmv[1:(296-7)], pgamma(diff(cmv, lag=7), shape=7, rate=296/229354, log=T),
      xlab = c("Location"), ylab = c("Logarithmic probability"), main = "(fig. 10) Plot of group spacing, group size = 7")
 ```
 
-  Below are groups of improbable clusters based on their group size (lag), and probability (p). The clusters at 90,000 and 190,000 appear in all of these lists. The cluster at 75,000 appears with lag of 4 and 5, with p < 0.01 meaning it is also quite improbable. If the cutoff probability is made slightly more lenient, p = 0.05, then more clusters appear around 50,000, 175,000, and 135,000 but these are not as strong of candidates due to their requirement of a smaller group sizing and more lenient probability cutoff.
+  Below are groups of improbable clusters based on their group size (lag), and probability (p). The clusters at 90,000 and 190,000 appear in all of these lists. The cluster at 75,000 appears with lag of 4 and 5, with p < 0.01 meaning it is also quite improbable. If the cutoff probability is made slightly more lenient, p = 0.05, then more clusters appear around 50,000, 135,000, and 160,000 but these are not as strong of candidates due to their requirement of a smaller group sizing and more lenient probability cutoff. These were observed in the sliding window analyses though.
 ```{r}
 
 # show the location of various group sizes with improbable proximity within group
@@ -285,4 +289,4 @@ cmv[1:(296-9)][ which(pgamma(diff(cmv, lag=9), shape=9,
   
   5. ~160,000 to 165,000 (first at 162,682)
   
-  Where rank 1 is most suspect, and the rest follow in a descending order. The location of the first palindrome is given as a fairly early observation of the beginning of a group to ensure it is not exluded. The less probable and less apparent groups, like the ones only seen in the sliding window or in the pgamma probability groups, are included as notable clusters in the event that the dramatic first two do not yield the site of replication. Ranks 3, 4, and 5 are all clusters that reach the probability cutoff drawn on figures 7 and 8. While not as improbable as the clusters around 90,000 and 190,000, they are still worth noting. It is also worth noting that in saying a cluster is improbable, it is only so improbable given that it is the product of chance.
+  Where rank 1 is most suspect, and the rest follow in a descending order. The location of the first palindrome is given as a fairly early observation of the beginning of a group to ensure it is not exluded. The less probable and less apparent groups, like the ones only seen in the sliding window or in the pgamma probability groups, are included as notable clusters in the event that the dramatic first two do not yield the site of replication. Ranks 3, 4, and 5 are all clusters that reach the probability cutoff drawn on figures 7 and 8. While not as improbable as the clusters around 90,000 and 190,000, they are still worth noting. It is also worth noting that in saying a cluster is improbable, it is only so improbable given that it is the product of chance. This means that highly improbable events are indicative of a process acting to cause them.
